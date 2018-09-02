@@ -1,6 +1,5 @@
 package com.everis.alimentatec.controller;
 
-
 import java.io.IOException;
 import java.util.List;
 
@@ -25,44 +24,43 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 @EnableCircuitBreaker
 @RestController
 public class AllInOneController {
-	
+
 	@Value("${customprop.vercambiosdeconfig}")
 	private String vercambiosdeconfig;
 	@Autowired
-    private DiscoveryClient discoveryClient;
+	private DiscoveryClient discoveryClient; // No específico de Eureka, nos serviría para otros servicios de
+												// descubrimiento
 	@Autowired
 	Environment environment;
-	
-	
+
 	@RequestMapping(value = "/hola", method = RequestMethod.POST)
+	// Aquí podemos meter props de hystrix o en la config para aislar en otro hilo
+	// las peticiones fallback o forzar al mismo hilo (semáforo) y si se quiere
+	// compartir el contexto de seguridad shareSecurityContext
 	@HystrixCommand(fallbackMethod = "fallbackMethodHolaMundo")
-	public Saludo holaMundo(@RequestBody Persona persona) throws IOException
-	{
-		if(persona.getNombre().equals("error"))
-		{
-			throw new IOException("Esto es un error provocado para probar un fallback de hystrix"); 
+	public Saludo holaMundo(@RequestBody Persona persona) throws IOException {
+		if (persona.getNombre().equals("error")) {
+			throw new IOException("Esto es un error provocado para probar un fallback de hystrix");
 		}
-		Saludo saludo=new Saludo();
-		saludo.setFrase(""+vercambiosdeconfig+" PUERTO: "+environment.getProperty("local.server.port"));
+		Saludo saludo = new Saludo();
+		saludo.setFrase("" + vercambiosdeconfig + " PUERTO: " + environment.getProperty("local.server.port"));
 		saludo.setPersona(persona);
-		return saludo;		
+		return saludo;
 	}
-	
-	public Saludo fallbackMethodHolaMundo(@RequestBody Persona persona)
-	{
-		Saludo saludo=new Saludo();
-		saludo.setFrase("Esto es el método fallback "+environment.getProperty("local.server.port"));
-		Persona fallbackPersona=new Persona();
+
+	public Saludo fallbackMethodHolaMundo(@RequestBody Persona persona) {
+		Saludo saludo = new Saludo();
+		saludo.setFrase("Esto es el método fallback " + environment.getProperty("local.server.port"));
+		Persona fallbackPersona = new Persona();
 		fallbackPersona.setNombre("FALLBACK");
 		fallbackPersona.setApellidos("FALLBACK");
 		saludo.setPersona(fallbackPersona);
-		return saludo;		
+		return saludo;
 	}
-	
-	 @RequestMapping("/service-instances/{applicationName}")
-	    public List<ServiceInstance> serviceInstancesByApplicationName(
-	            @PathVariable String applicationName) {
-	        return this.discoveryClient.getInstances(applicationName);
-	    }
+
+	@RequestMapping("/service-instances/{applicationName}")
+	public List<ServiceInstance> serviceInstancesByApplicationName(@PathVariable String applicationName) {
+		return this.discoveryClient.getInstances(applicationName);
+	}
 
 }
